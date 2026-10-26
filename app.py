@@ -1,5 +1,4 @@
 import io
-from datetime import date
 
 import pandas as pd
 import plotly.graph_objects as go
@@ -235,7 +234,6 @@ def fetch_cpi(country_code):
 
 @st.cache_data(ttl=3600)
 def fetch_fx(country_code):
-    # USD is exactly 1 USD per USD.
     if country_code == "USA":
         dates = pd.date_range(
             start="1976-01-01",
@@ -277,20 +275,15 @@ def build_dataset(country1_code, country2_code):
     data = data.merge(fx1, on="Date", how="inner")
     data = data.merge(fx2, on="Date", how="inner")
 
-    # IMF FX data:
-    # FX1 = Country 1 currency per USD
-    # FX2 = Country 2 currency per USD
-    #
-    # Required:
-    # S = Country 2 currency per one unit of Country 1 currency
-    #
+    # IMF exchange rates are local currency units per USD.
+    # Required S(t) is Country 2 currency per one unit of Country 1 currency.
     # Therefore:
-    # S = FX2 / FX1
+    # S(t) = FX2 / FX1
 
     data["S"] = data["FX2_per_USD"] / data["FX1_per_USD"]
 
-    # Real exchange rate
-    # RER = S × P1 / P2
+    # Real exchange rate:
+    # RER(t) = S(t) × P1(t) / P2(t)
 
     data["RER"] = data["S"] * data["P1"] / data["P2"]
 
@@ -356,7 +349,6 @@ except Exception as error:
     st.error("The data could not be processed.")
     st.code(str(error))
     st.stop()
-
 
 if full_data.empty:
     st.error(
@@ -497,6 +489,15 @@ else:
             title=f"Nominal S(t): {country2} per {country1}",
             overlaying="y",
             side="right",
+        ),
+        legend=dict(
+            x=0.76,
+            y=0.98,
+            xanchor="left",
+            yanchor="top",
+        ),
+        margin=dict(
+            r=180,
         ),
     )
 
